@@ -4,7 +4,7 @@
 int main(int argc, char *argv[]){
     int ch;
     int debug = 0;
-    int letter_count = 0;
+    int letters = 0;
     int encry = 0;
     int pos = 0;
     int neg = 0;
@@ -12,11 +12,9 @@ int main(int argc, char *argv[]){
     FILE *input = stdin;
     FILE *output = stdout;
 
-    /* checking the arguments */
     for(int i = 1; i < argc; i++){
         if(strcmp(argv[i],"-D") == 0){
             debug = 1;
-            fprintf(stderr,"-D\n");
         }
         if(argv[i][1] == 'e'){
             encry = 1;
@@ -28,63 +26,73 @@ int main(int argc, char *argv[]){
         }
         if(argv[i][1] == 'i'){
             char *infile = argv[i];
-            infile += 2;
+            infile+=2;
             input = fopen(infile,"r");
         }
         if(argv[i][1] == 'o'){
             char *outfile = argv[i];
-            outfile += 2;
+            outfile+=2;
             output = fopen(outfile,"w+");
         }
+        fprintf(stderr,"%s\n",argv[i]);
     }
 
-    /* starting the action of the program */
-    while((ch = fgetc(input)) != EOF){
-        char b = ch;
-        if('A' <= ch && ch<='Z'){
-            b = (ch - 'A') + 'a';
-            letter_count++;
-        }
-
-        /* this works if we entered "encoder -D" */
-        if(debug == 1){ 
-            if (ch == 10){
-                fprintf(stderr,"\nthe number of letters: %d\n\n",letter_count);
-            }else{
-                fprintf(stderr, ((int)ch) < 100 ? "%d    %d\n" : "%d   %d\n",(int)ch,(int)b);
+    if(input != NULL){
+        int ch_new;
+        int old_letters = letters;
+        while((ch = fgetc(input)) != EOF){
+            ch_new = ch;
+            old_letters = letters;
+            if('A' <= ch && ch<='Z'){
+                    ch_new = (ch - 'A') + 'a';
+                    letters++;
             }
-        }
-        /**/
-        if(encry == 1){
-            /* finding the hexadecimal value */
-            int value = 0;
-            if('0' <= key && key <= '9'){
-                value = key - '0';
-            }else{
-                value = key - 'A' + 10;
-            }
-            /* start the encrypting */
-            if(pos == 1){
-                if(key != ' ' && ('A' <= ch && ch<='Z')){
-                    b = (ch + value) % 127;
+            if(debug == 1){ 
+                if (ch == 10){
+                    fprintf(stderr,"\nthe number of letters: %d\n\n",letters);
                 }else{
-                    if('A' <= ch && ch<='Z'){
-                        b = (ch - 'A') + 'a';
-                    }
+                    fprintf(stderr, ch < 100 ? "%d    %d\n" : "%d   %d\n",ch,ch_new);
                 }
             }
-            if (neg == 1){
-                if(key != ' '){
-                    b = (ch - value) % 127;
+            //********
+            if(encry == 1){
+                int value = 0;
+                if('0' <= key && key <= '9'){
+                    value = key - '0';
                 }else{
-                    if('A' <= ch && ch<='Z'){
-                        b = (ch - 'A') + 'a';
+                    value = key - 'A' + 10;
+                }
+                if(pos == 1){
+                    if(key != ' '){
+                        ch_new = (ch + value > 127 ? ch - value : ch + value) % 127;
+                    }else{
+                        if('A' <= ch && ch<='Z'){
+                            ch_new = (ch - 'A') + 'a';
+                        }
                     }
                 }
-            }     
+                if (neg == 1){
+                    if(key != ' '){
+                        ch_new = (ch + value < 0 ? 127 - (value - ch) : ch - value) % 127;
+                    }else{
+                        if('A' <= ch && ch<='Z'){
+                            ch_new = (ch - 'A') + 'a';
+                        }
+                    }
+                }
+                if(old_letters == letters){
+                    letters++;     
+                }
+            }
+            if(ch != 10){
+                fprintf(output,"%c",ch_new);
+            }else{
+                fprintf(output,"\n");
+            }
         }
-        fputc(b,output);
+        fclose(input);
+        fclose(output);
+    }else{
+        fprintf(stderr,"***there is a problem***\n");
     }
-    fputc('\n',output);
-    fclose(output);
 }
